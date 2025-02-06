@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
           </header>
           <main className="flex-grow container mx-auto p-4">{children}</main>
           <footer className="bg-muted p-4 text-center">
-            <p>&copy; 2025 Your College Name</p>
+            <p>&copy; 2025 DJSCE IT Departent</p>
           </footer>
         </div>
       </body>
