@@ -118,7 +118,7 @@ export default function StudentPortal() {
           <div
             key={index}
             className={`flex items-center space-x-4 p-4 rounded-lg border ${
-              isSelected ? "bg-blue-100" : "bg-white"
+              isSelected ? "bg-green-100" : "bg-white"
             }`}
           >
             <Checkbox
