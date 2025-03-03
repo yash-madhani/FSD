@@ -26,15 +26,15 @@ export default function Login() {
     if (error) {
       setError(error.message);
     } else {
-      router.push("/dashboard"); // Redirect after login
+      router.push("/"); // Redirect after login
     }
     setLoading(false);
   };
 
-  const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
-    if (error) setError(error.message);
-  };
+  // const handleGoogleLogin = async () => {
+  //   const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
+  //   if (error) setError(error.message);
+  // };
 
   return (
     <div className="max-w-md mx-auto">
@@ -63,9 +63,9 @@ export default function Login() {
         <Button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </Button>
-        <Button onClick={handleGoogleLogin} className="bg-red-500 text-white w-full">
+        {/* <Button onClick={handleGoogleLogin} className="bg-red-500 text-white w-full">
           Login with Google
-        </Button>
+        </Button> */}
         {error && <p className="text-red-500">{error}</p>}
       </form>
       <p className="mt-4">

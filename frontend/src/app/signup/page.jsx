@@ -10,8 +10,15 @@ import { useRouter } from "next/navigation";
 
 export default function Signup() {
   const [userType, setUserType] = useState("student");
+  const [sapId, setSapId] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [classInfo, setClassInfo] = useState("");
+  const [year, setYear] = useState("");
+  const [branch, setBranch] = useState("");
+  const [batch, setBatch] = useState("");
+  const [timetableId, setTimetableId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
@@ -21,13 +28,27 @@ export default function Signup() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error: authError } = await supabase.auth.signUp({ email, password });
 
-    if (error) {
-      setError(error.message);
+    if (authError) {
+      setError(authError.message);
     } else {
-      alert("Check your email for confirmation!");
-      router.push("/login"); // Redirect to login after signing up
+      try {
+        if (userType === "student") {
+          const { error: studentError } = await supabase.from("students").insert([
+            { sap_id: sapId, name, email, class: classInfo, year, branch, batch, timetable_id: timetableId || null }
+          ]);
+          if (studentError) throw studentError;
+        } else {
+          const { error: teacherError } = await supabase.from("teachers").insert([
+            { sap_id: sapId, name, email, incharge_of_class: classInfo }
+          ]);
+          if (teacherError) throw teacherError;
+        }
+        router.push("/"); // Redirect to home page
+      } catch (dbError) {
+        setError(dbError.message);
+      }
     }
     setLoading(false);
   };
@@ -49,6 +70,14 @@ export default function Signup() {
           </Select>
         </div>
         <div>
+          <Label>SAP ID</Label>
+          <Input type="text" value={sapId} onChange={(e) => setSapId(e.target.value)} required />
+        </div>
+        <div>
+          <Label>Name</Label>
+          <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+        </div>
+        <div>
           <Label>Email</Label>
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
@@ -56,6 +85,36 @@ export default function Signup() {
           <Label>Password</Label>
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
+        {userType === "student" && (
+          <>
+            <div>
+              <Label>Class</Label>
+              <Input type="text" value={classInfo} onChange={(e) => setClassInfo(e.target.value)} required />
+            </div>
+            <div>
+              <Label>Year</Label>
+              <Input type="text" value={year} onChange={(e) => setYear(e.target.value)} required />
+            </div>
+            <div>
+              <Label>Branch</Label>
+              <Input type="text" value={branch} onChange={(e) => setBranch(e.target.value)} required />
+            </div>
+            <div>
+              <Label>Batch</Label>
+              <Input type="text" value={batch} onChange={(e) => setBatch(e.target.value)} required />
+            </div>
+            <div>
+              <Label>Timetable ID (optional)</Label>
+              <Input type="number" value={timetableId} onChange={(e) => setTimetableId(e.target.value)} />
+            </div>
+          </>
+        )}
+        {userType === "teacher" && (
+          <div>
+            <Label>Class/Batch</Label>
+            <Input type="text" value={classInfo} onChange={(e) => setClassInfo(e.target.value)} />
+          </div>
+        )}
         <Button type="submit" disabled={loading}>
           {loading ? "Signing up..." : "Sign Up"}
         </Button>
@@ -67,3 +126,4 @@ export default function Signup() {
     </div>
   );
 }
+
