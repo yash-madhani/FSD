@@ -36,7 +36,7 @@ export default function Signup() {
       try {
         if (userType === "student") {
           const { error: studentError } = await supabase.from("students").insert([
-            { sap_id: sapId, name, email, class: classInfo, year, branch, batch, timetable_id: timetableId || null }
+            { sap_id: sapId, name, email, year, branch}
           ]);
           if (studentError) throw studentError;
         } else {

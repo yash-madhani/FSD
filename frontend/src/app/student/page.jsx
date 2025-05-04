@@ -371,7 +371,7 @@ export default function StudentView() {
       const requests = timeRanges.map(range => ({
         student_sap_id: sapId,
         document_id: null,
-        admin_id: "1",
+        admin_id: "6000300000",
         reason,
         is_approved: false,
         // Format for tstzrange in PostgreSQL

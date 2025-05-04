@@ -54,7 +54,13 @@ export default function RootLayoutClient({ children }) {
             .single();
 
           if (teacherError) {
-            console.error("Teacher fetch error:", teacherError);
+            
+  console.error("Teacher fetch error:", {
+    message: teacherError.message,
+    details: teacherError.details,
+    hint: teacherError.hint,
+  });
+
           }
 
           if (teacher) {
