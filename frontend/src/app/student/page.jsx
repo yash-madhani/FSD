@@ -223,9 +223,10 @@
 "use client";
 
 import React, { useState } from "react";
+import { useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, UploadCloud } from "lucide-react";
-
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -289,9 +290,12 @@ const timetable = {
 export default function StudentView() {
   //   const supabase = useSupabaseClient()
 
+  
+
   const [mode, setMode] = useState("single");
   const [singleDate, setSingleDate] = useState(null);
   const [range, setRange] = useState({ from: null, to: null });
+const [sapId, setSapId] = useState("");
   const [reason, setReason] = useState("");
   const [proof, setProof] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -320,6 +324,115 @@ export default function StudentView() {
 
   const dayOfWeek = selectedDate ? getDayFromDate(selectedDate) : null;
   const dayTimetable = dayOfWeek ? timetable[dayOfWeek] : null;
+
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session) return;
+  
+        const email = session.user.email;
+  
+        const { data: student, error: studentError } = await supabase
+          .from("students")
+          .select("sap_id")
+          .eq("email", email)
+          .single();
+  
+        if (student) {
+          setSapId(student.sap_id);
+          return;
+        }
+  
+        const { data: teacher, error: teacherError } = await supabase
+          .from("teachers")
+          .select("sap_id")
+          .eq("email", email)
+          .single();
+  
+        if (teacher) {
+          setSapId(teacher.sap_id);
+        }
+      } catch (err) {
+        console.error("Unexpected error:", err);
+      }
+    };
+  
+    fetchUserDetails();
+  }, []);
+
+  // const buildTimeRange = () => {
+  //   if (mode === "range" && range.from && range.to) {
+  //     const from = new Date(range.from);
+  //     from.setHours(6, 0, 0, 0);
+  //     const to = new Date(range.to);
+  //     to.setHours(20, 0, 0, 0);
+  //     return `[${from.toISOString()},${to.toISOString()}]`;
+  //   }
+  
+  //   if (mode === "single" && selectedDate && selectedLectures.length > 0) {
+  //     const times = selectedLectures.map((index) => {
+  //       const lecture = dayTimetable?.[parseInt(index)];
+  //       return lecture?.time;
+  //     }).filter(Boolean);
+  
+  //     const startTimes = times.map((t) => new Date(`${selectedDate} ${t?.split(" - ")[0]}`));
+  //     const endTimes = times.map((t) => new Date(`${selectedDate} ${t?.split(" - ")[1]}`));
+  
+  //     const start = new Date(Math.min(...startTimes));
+  //     const end = new Date(Math.max(...endTimes));
+  //     return `[${start.toISOString()},${end.toISOString()}]`;
+  //   }
+  
+  //   return null;
+  // };
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setIsSubmitting(true);
+  
+  //   const timeRange = buildTimeRange();
+  //   if (!sapId || !reason || !timeRange) {
+  //     alert("Missing required fields");
+  //     setIsSubmitting(false);
+  //     return;
+  //   }
+  
+  //   const payload = {
+  //     student_sap_id: sapId,
+  //     // timetable_id: 1,
+  //     document_id: null,
+  //     admin_id: "1",
+  //     reason,
+  //     is_approved: false,
+  //     time_range: timeRange,
+  //   };
+  
+  //   const { error } = await supabase.from("attendancerequests").insert(payload);
+  
+  //   if (error) {
+  //     alert("Failed to submit request");
+  //     console.error(error);
+  //   } else {
+  //     alert("Attendance request submitted!");
+  //     // Reset form
+  //     setSelectedDate("");
+  //     setSingleDate(null);
+  //     setRange({ from: null, to: null });
+  //     setSelectedLectures([]);
+  //     setReason("");
+  //     setProof(null);
+  //   }
+  
+  //   setIsSubmitting(false);
+  // };
+
+
+  
+  
+  
+
 
   //   const handleSubmit = async (e) => {
   //     e.preventDefault()
@@ -370,6 +483,146 @@ export default function StudentView() {
   //     setIsSubmitting(false)
   //   }
 
+  const buildTimeRanges = () => {
+    if (mode === "range" && range.from && range.to) {
+      // For date range mode
+      const from = new Date(range.from);
+      from.setHours(6, 0, 0, 0);
+      const to = new Date(range.to);
+      to.setHours(20, 0, 0, 0);
+      
+      return [{
+        start: from.toISOString(),
+        end: to.toISOString()
+      }];
+    }
+  
+    if (mode === "single" && selectedDate && selectedLectures.length > 0) {
+      // Sort lectures by their index to maintain chronological order
+      const sortedLectures = [...selectedLectures].sort((a, b) => parseInt(a) - parseInt(b));
+      
+      // Group consecutive lectures together
+      const lectureGroups = [];
+      let currentGroup = [];
+      
+      sortedLectures.forEach((lectureIndex, arrayIndex) => {
+        const currentLectureIdx = parseInt(lectureIndex);
+        
+        // Start a new group if this is the first lecture or if not consecutive
+        if (arrayIndex === 0 || currentLectureIdx !== parseInt(sortedLectures[arrayIndex - 1]) + 1) {
+          if (currentGroup.length > 0) {
+            lectureGroups.push([...currentGroup]);
+          }
+          currentGroup = [currentLectureIdx];
+        } else {
+          currentGroup.push(currentLectureIdx);
+        }
+      });
+      
+      // Add the last group
+      if (currentGroup.length > 0) {
+        lectureGroups.push(currentGroup);
+      }
+      
+      // Create time ranges for each group
+      return lectureGroups.map(group => {
+        const groupLectures = group.map(index => dayTimetable?.[index]).filter(Boolean);
+        
+        if (groupLectures.length === 0) return null;
+        
+        // Get the time strings
+        const startTimeStr = groupLectures[0].time.split(" - ")[0];
+        const endTimeStr = groupLectures[groupLectures.length - 1].time.split(" - ")[1];
+        
+        // Convert to proper date objects with IST timezone consideration
+        // Parse times in 24-hour format to ensure correct times
+        const [startHour, startMinute] = convertTo24Hour(startTimeStr);
+        const [endHour, endMinute] = convertTo24Hour(endTimeStr);
+        
+        // Create local date objects first
+        const startDate = new Date(selectedDate);
+        startDate.setHours(startHour, startMinute, 0, 0);
+        
+        const endDate = new Date(selectedDate);
+        endDate.setHours(endHour, endMinute, 0, 0);
+        
+        return {
+          start: startDate.toISOString(),
+          end: endDate.toISOString()
+        };
+      }).filter(Boolean);
+    }
+  
+    return [];
+  };
+  
+  // Helper function to convert AM/PM time to 24-hour format
+  const convertTo24Hour = (timeStr) => {
+    // Check if already in 24-hour format
+    if (!timeStr.includes("AM") && !timeStr.includes("PM")) {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      return [hours, minutes];
+    }
+    
+    const isPM = timeStr.toUpperCase().includes("PM");
+    const timeWithoutAMPM = timeStr.replace(/\s*[APap][Mm]\s*/, "");
+    let [hours, minutes] = timeWithoutAMPM.split(":").map(Number);
+    
+    if (isPM && hours < 12) {
+      hours += 12;
+    } else if (!isPM && hours === 12) {
+      hours = 0;
+    }
+    
+    return [hours, minutes];
+  };
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+  
+    const timeRanges = buildTimeRanges();
+    if (!sapId || !reason || timeRanges.length === 0) {
+      alert("Missing required fields");
+      setIsSubmitting(false);
+      return;
+    }
+  
+    try {
+      // Create multiple database entries for non-consecutive lecture groups
+      const requests = timeRanges.map(range => ({
+        student_sap_id: sapId,
+        document_id: null,
+        admin_id: "1",
+        reason,
+        is_approved: false,
+        // Format for tstzrange in PostgreSQL
+        time_range: `[${range.start},${range.end}]`
+      }));
+  
+      const { error } = await supabase.from("attendancerequests").insert(requests);
+  
+      if (error) {
+        alert("Failed to submit request");
+        console.error(error);
+      } else {
+        alert(`Attendance request${requests.length > 1 ? 's' : ''} submitted!`);
+        // Reset form
+        setSelectedDate("");
+        setSingleDate(null);
+        setRange({ from: null, to: null });
+        setSelectedLectures([]);
+        setReason("");
+        setProof(null);
+      }
+    } catch (err) {
+      alert("An error occurred");
+      console.error(err);
+    }
+  
+    setIsSubmitting(false);
+  };
+
   return (
     <div className="max-w-xl mx-auto bg-white p-6 rounded-xl shadow-lg">
       <h1 className="text-2xl font-semibold mb-6">Submit Attendance Request</h1>
@@ -389,7 +642,7 @@ export default function StudentView() {
         </Button>
       </div>
 
-      <form className="space-y-4">
+      <form className="space-y-4" onSubmit={handleSubmit}>
         {/* Single Date Picker */}
         {mode === "single" && (
           <div>
