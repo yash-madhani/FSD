@@ -1,42 +1,66 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+'use client';
 
-// This would typically come from your backend
-const attendanceRequests = [
-  { id: 1, student: "John Doe", class: "Class 1", lecture: "Lecture 1", date: "2025-02-05" },
-  { id: 2, student: "Jane Smith", class: "Class 2", lecture: "Lecture 2", date: "2025-02-06" },
-  // Add more mock data as needed
-]
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function TeacherDashboard() {
+export default function TeacherDashboardPage() {
+  const [lectures, setLectures] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const sapId = '6000310006'; // Replace with real teacher ID from session
+  // const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' }); // "Monday", "Tuesday", etc.
+  const dayOfWeek = 'Wednesday'; // "Monday", "Tuesday", etc.
+
+  useEffect(() => {
+    const fetchLectures = async () => {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from('lecture')
+        .select('lecture_id, course_code, subject, start_time, end_time, room_no, group_code')
+        .eq('teacher_sap_id', sapId)
+        .eq('day_of_week', dayOfWeek);
+
+      if (error) {
+        console.error('Error fetching lectures:', error.message);
+      } else {
+        setLectures(data);
+      }
+
+      setLoading(false);
+    };
+
+    fetchLectures();
+  }, [sapId, dayOfWeek]);
+
   return (
-    (<div>
-      <h2 className="text-2xl font-bold mb-4">Teacher Dashboard</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Student</TableHead>
-            <TableHead>Class</TableHead>
-            <TableHead>Lecture</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {attendanceRequests.map((request) => (
-            <TableRow key={request.id}>
-              <TableCell>{request.student}</TableCell>
-              <TableCell>{request.class}</TableCell>
-              <TableCell>{request.lecture}</TableCell>
-              <TableCell>{request.date}</TableCell>
-              <TableCell>
-                <Button size="sm">Approve</Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>)
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Lectures for {dayOfWeek}</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-[120px] w-full rounded-xl" />
+          ))
+        ) : lectures.length === 0 ? (
+          <p className="text-muted-foreground">No lectures scheduled for today.</p>
+        ) : (
+          lectures.map((lecture) => (
+            <Card key={lecture.lecture_id}>
+              <CardHeader>
+                <CardTitle>{lecture.subject}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground space-y-1">
+                <p><strong>Start:</strong> {lecture.start_time}</p>
+                <p><strong>End:</strong> {lecture.end_time}</p>
+                <p><strong>Room:</strong> {lecture.room_no}</p>
+                <p><strong>Group:</strong> {lecture.group_code}</p>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
-
