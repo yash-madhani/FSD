@@ -1,14 +1,40 @@
 'use client';
+
 import React, { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase';
-
 
 const AdminRequests = () => {
   const [requests, setRequests] = useState([])
+  const [isAdmin, setIsAdmin] = useState(null) // null = loading, true/false = known
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) {
+          setIsAdmin(false)
+          return
+        }
+      
+        const { data, error } = await supabase
+          .from('teachers')
+          .select('is_admin')
+          .eq('email', user.email)
+          .single()
+      
+        if (error || !data || !data.is_admin) {
+          setIsAdmin(false)
+        } else {
+          setIsAdmin(true)
+        }
+      }
+      
+
+    checkAdmin()
+  }, [])
 
   const fetchRequests = async () => {
     const { data, error } = await supabase
@@ -38,8 +64,16 @@ const AdminRequests = () => {
   }
 
   useEffect(() => {
-    fetchRequests()
-  }, [])
+    if (isAdmin) fetchRequests()
+  }, [isAdmin])
+
+  if (isAdmin === null) {
+    return <p className="p-6">Checking access...</p>
+  }
+
+  if (!isAdmin) {
+    return <p className="p-6 text-red-500 font-semibold">Unauthorized: Admin access required</p>
+  }
 
   return (
     <div className="p-6">

@@ -14,6 +14,9 @@ export default function Home() {
             Teacher Dashboard
           </Button>
         </Link>
+        <Link className="m-auto" href="/admin">
+          <Button size="lg">Admin Portal</Button>
+        </Link>
       </div>
     </div>)
   );
