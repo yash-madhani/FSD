@@ -4,19 +4,23 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function TeacherDashboardPage() {
   const [lectures, setLectures] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedLecture, setSelectedLecture] = useState(null);
+  const [absentees, setAbsentees] = useState([]);
+  const [absenteesLoading, setAbsenteesLoading] = useState(false);
 
-  const sapId = '6000310006'; // Replace with real teacher ID from session
-  // const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' }); // "Monday", "Tuesday", etc.
-  const dayOfWeek = 'Wednesday'; // "Monday", "Tuesday", etc.
+  const sapId = '6000310006';
+  // const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const dayOfWeek = 'Wednesday';
+  const currentDate = new Date().toISOString().split('T')[0]; // e.g., "2025-05-06"
 
   useEffect(() => {
     const fetchLectures = async () => {
       setLoading(true);
-
       const { data, error } = await supabase
         .from('lecture')
         .select('lecture_id, course_code, subject, start_time, end_time, room_no, group_code')
@@ -35,6 +39,25 @@ export default function TeacherDashboardPage() {
     fetchLectures();
   }, [sapId, dayOfWeek]);
 
+  const fetchAbsentees = async (lecture) => {
+    setAbsenteesLoading(true);
+    setSelectedLecture(lecture);
+  
+    const { data, error } = await supabase.rpc('get_matching_attendance_requests', {
+      input_date: '2025-05-06',              // '2025-05-06'
+      input_lecture_id: 22          // 22
+    });
+  
+    if (error) {
+      console.error('Error fetching absentees:', error.message);
+    } else {
+      setAbsentees(data);
+    }
+  
+    setAbsenteesLoading(false);
+  };
+  
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Lectures for {dayOfWeek}</h1>
@@ -47,7 +70,7 @@ export default function TeacherDashboardPage() {
           <p className="text-muted-foreground">No lectures scheduled for today.</p>
         ) : (
           lectures.map((lecture) => (
-            <Card key={lecture.lecture_id}>
+            <Card key={lecture.lecture_id} onClick={() => fetchAbsentees(lecture)} className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle>{lecture.subject}</CardTitle>
               </CardHeader>
@@ -61,6 +84,30 @@ export default function TeacherDashboardPage() {
           ))
         )}
       </div>
+
+      {/* Absentees Modal */}
+      {selectedLecture && (
+        <Dialog open={!!selectedLecture} onOpenChange={() => setSelectedLecture(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Absentees for {selectedLecture.subject}</DialogTitle>
+            </DialogHeader>
+            {absenteesLoading ? (
+              <p>Loading absentees...</p>
+            ) : absentees.length === 0 ? (
+              <p>No absentees found.</p>
+            ) : (
+              <ul className="list-disc pl-5">
+                {absentees.map((a) => (
+                  <li key={a.request_id}>
+                    {a.student_sap_id}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

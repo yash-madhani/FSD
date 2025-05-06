@@ -54,13 +54,11 @@ export default function RootLayoutClient({ children }) {
             .single();
 
           if (teacherError) {
-            
-  console.error("Teacher fetch error:", {
-    message: teacherError.message,
-    details: teacherError.details,
-    hint: teacherError.hint,
-  });
-
+            console.error("Teacher fetch error:", {
+              message: teacherError.message,
+              details: teacherError.details,
+              hint: teacherError.hint,
+            });
           }
 
           if (teacher) {
@@ -94,9 +92,7 @@ export default function RootLayoutClient({ children }) {
         <div className="flex flex-col min-h-screen">
           <header className="bg-primary text-primary-foreground p-4">
             <div className="container mx-auto flex justify-between items-center">
-              <h1 className="text-2xl font-bold">
-                IT Attendance Portal
-              </h1>
+              <h1 className="text-2xl font-bold">IT Attendance Portal</h1>
               <nav>
                 <ul className="flex justify-center items-center space-x-4">
                   {sapId ? (
