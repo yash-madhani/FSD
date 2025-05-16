@@ -17,6 +17,9 @@ export default function Home() {
         <Link className="m-auto" href="/admin">
           <Button size="lg">Admin Portal</Button>
         </Link>
+        {/* <Link className="m-auto" href="/elective">
+          <Button size="lg">Select your elective</Button>
+        </Link> */}
       </div>
     </div>)
   );
