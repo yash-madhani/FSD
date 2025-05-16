@@ -1,0 +1,89 @@
+'use client';
+
+import { useState } from "react";
+import { supabase } from "../../lib/supabase";
+
+const achievementTypes = [
+  "hackathon",
+  "cultural",
+  "competitive coding"
+];
+
+export default function AchievementForm() {
+  const [form, setForm] = useState({ name: "", type: achievementTypes[0], prize: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    const { name, type, prize } = form;
+    const { error } = await supabase.from("achievements").insert([
+      { name, type, prize: parseInt(prize, 10) }
+    ]);
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setSuccess("Achievement submitted successfully!");
+      setForm({ name: "", type: achievementTypes[0], prize: "" });
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 border rounded space-y-4">
+      <div>
+        <label className="block mb-1 font-medium">Competition Name</label>
+        <input
+          type="text"
+          name="name"
+          value={form.name}
+          onChange={handleChange}
+          required
+          className="w-full border px-3 py-2 rounded"
+        />
+      </div>
+      <div>
+        <label className="block mb-1 font-medium">Type</label>
+        <select
+          name="type"
+          value={form.type}
+          onChange={handleChange}
+          className="w-full border px-3 py-2 rounded"
+        >
+          {achievementTypes.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block mb-1 font-medium">Prize Received</label>
+        <input
+          type="number"
+          name="prize"
+          value={form.prize}
+          onChange={handleChange}
+          required
+          className="w-full border px-3 py-2 rounded"
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+      >
+        {loading ? "Submitting..." : "Submit Achievement"}
+      </button>
+      {error && <div className="text-red-600">{error}</div>}
+      {success && <div className="text-green-600">{success}</div>}
+    </form>
+  );
+}
