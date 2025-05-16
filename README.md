@@ -1,6 +1,7 @@
 ### FSD
 
 
-# Team - Yash Madhani. Yash Asgaonkar, Vaad Girolla, Sean Rumao
+# Team Leader - Yash Madhani 
+# Team - Yash Asgaonkar, Varad Girolla, Sean Rumao
 
 kar raha ho solve

@@ -14,8 +14,8 @@ export default function TeacherDashboardPage() {
   const [absenteesLoading, setAbsenteesLoading] = useState(false);
 
   const sapId = '6000310006';
-  // const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  const dayOfWeek = 'Wednesday';
+  const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  // const dayOfWeek = '';
   const currentDate = new Date().toISOString().split('T')[0]; // e.g., "2025-05-06"
 
   useEffect(() => {
